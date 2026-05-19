@@ -1,0 +1,87 @@
+{
+  "runtime": {
+    "enableDiscordBot": true,
+    "enableDashboard": false,
+    "logLevel": "info"
+  },
+  "logging": {
+    "directory": "logs",
+    "fileName": "autovc.log",
+    "maxHistory": 7,
+    "maxFileSizeMb": 10,
+    "console": true
+  },
+  "channelNameRefresh": {
+    "enabled": true,
+    "intervalSeconds": 90,
+    "maxRenamesPerChannel": 2,
+    "windowMinutes": 10,
+    "renameReason": "AutoVC: update channel name"
+  },
+  "recovery": {
+    "onStartup": true,
+    "intervalMinutes": 5,
+    "guildDelayMs": 750,
+    "taskDelayMs": 350,
+    "maxRetries": 5
+  },
+  "discord": {
+    "token": "YOUR_BOT_TOKEN",
+    "applicationId": "YOUR_APPLICATION_ID",
+    "guildId": "",
+    "deployCommands": "never"
+  },
+  "supabase": {
+    "url": "https://YOUR_PROJECT.supabase.co",
+    "anonKey": "YOUR_ANON_KEY",
+    "serviceRoleKey": ""
+  },
+  "defaults": {
+    "creator": {
+      "channelName": "➕ Join to Create",
+      "userLimit": 0,
+      "createReason": "AutoVC creator channel"
+    },
+    "guild": {
+      "channelNameTemplate": "{creator.displayName}'s Channel",
+      "gameFallback": "Voice Channel",
+      "emojiPool": [],
+      "categoryId": null,
+      "tempCategoryId": null,
+      "bitrate": null,
+      "userLimit": null,
+      "rtcRegion": null,
+      "deleteDelayMs": 3000,
+      "tempPermissionSync": "category",
+      "ownerPermissions": [],
+      "maxChannelsPerUser": null,
+      "locale": "en",
+      "tempChannelPosition": "belowCreator",
+      "modLogChannelId": null,
+      "modLogWebhookId": null,
+      "modLogWebhookToken": null,
+      "modLogTemplateCreate": "Voice channel created: {newchannel.mention} (`{newchannel.id}`) via {creatorchannel.mention} (`{creatorchannel.id}`) · {creator.displayName} ({creator.name})",
+      "modLogTemplateUpdate": "Channel renamed: {oldchannel.mention} (`{oldchannel.id}`) → {newchannel.mention} · {creator.displayName}",
+      "modLogTemplateDelete": "Voice channel deleted: {oldchannel.name} (`{oldchannel.id}`) · {creator.displayName} ({creator.name})",
+      "modLogTemplateJoin": "Joined {newchannel.mention} · {creator.displayName} ({creator.name})",
+      "modLogTemplateLeave": "Left {oldchannel.mention} · {creator.displayName} ({creator.name})",
+      "tempGreetingMessage": "",
+      "tempInterfaceEnabled": false
+    },
+    "tempChannel": {
+      "createReason": "AutoVC temporary voice channel",
+      "deleteReason": "AutoVC: empty temporary channel",
+      "fallbackOwnerPermissions": [
+        "ManageChannels",
+        "MoveMembers",
+        "CreateInstantInvite",
+        "Stream",
+        "UseVAD"
+      ]
+    },
+    "creatorRemoveReason": "AutoVC: creator removed",
+    "naming": {
+      "maxChannelNameLength": 100
+    }
+  }
+}

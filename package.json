@@ -1,0 +1,30 @@
+{
+  "name": "autovc",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "bun@1.3.10",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "deploy:commands": "bun run src/scripts/deploy-commands.ts",
+    "db:link": "supabase link",
+    "db:push": "supabase db push"
+  },
+  "trustedDependencies": ["supabase"],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "async-mutex": "^0.5.0",
+    "discord.js": "^14.26.4",
+    "pino": "^9.7.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "pino-pretty": "^13.0.0",
+    "supabase": "^2.98.2",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,44 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist/
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs (keep folder, ignore contents)
+logs
+logs/*
+!logs/.gitkeep
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# local secrets (use config.example.json as template)
+config.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+
+# Supabase Local Development
+supabase/.temp/
+supabase/.logs/
+supabase/.branches/
