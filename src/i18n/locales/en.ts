@@ -229,7 +229,7 @@ export const en = {
       sectionModLog:
         '### 📝 Moderation logs\nLogs for temp channel create, rename, delete, and member join/leave.',
       modLogHint:
-        '-# Plain text (no pings). Temp: {oldchannel.*} {newchannel.*} · hub: {creatorchannel.*} · owner: {creator.*}',
+        '-# Plain text (no pings). Temp: {oldchannel.*} {newchannel.*} · hub: {creatorchannel.*} · owner: {creator.*}. Leave a template empty to disable that log type.',
       selectModLogChannel: '📝 Log channel',
       modLogDisabled: 'Disabled',
       modLogEditCreate: '✏️ Create template',
@@ -251,13 +251,13 @@ export const en = {
     },
     modLog: {
       invalidTitle: 'Invalid template',
-      empty: 'Log template cannot be empty.',
       savedTitle: 'Saved',
       savedCreate: 'Create log template updated.',
       savedUpdate: 'Update log template updated.',
       savedDelete: 'Delete log template updated.',
       savedJoin: 'Join log template updated.',
       savedLeave: 'Leave log template updated.',
+      savedDisabled: 'That log type is disabled (empty template). Nothing will be posted until you add text.',
       modalCreate: 'Create log template',
       modalUpdate: 'Update log template',
       modalDelete: 'Delete log template',

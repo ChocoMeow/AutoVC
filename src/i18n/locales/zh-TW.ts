@@ -221,7 +221,7 @@ export const zhTW = {
       regionAuto: '自動',
       sectionModLog: '### 📝 管理日誌\n臨時頻道建立、重新命名、刪除與成員加入/離開時發送訊息。',
       modLogHint:
-        '-# 純文字（不會 @ 任何人）。臨時：{oldchannel.*} {newchannel.*} · 創建頻道：{creatorchannel.*} · 擁有者：{creator.*}',
+        '-# 純文字（不會 @ 任何人）。臨時：{oldchannel.*} {newchannel.*} · 創建頻道：{creatorchannel.*} · 擁有者：{creator.*}。將某一類範本留空即可停用該類日誌。',
       selectModLogChannel: '📝 日誌頻道',
       modLogDisabled: '已停用',
       modLogEditCreate: '✏️ 建立範本',
@@ -243,13 +243,13 @@ export const zhTW = {
     },
     modLog: {
       invalidTitle: '無效的範本',
-      empty: '日誌範本不可為空。',
       savedTitle: '已儲存',
       savedCreate: '已更新「建立」日誌範本。',
       savedUpdate: '已更新「更新」日誌範本。',
       savedDelete: '已更新「刪除」日誌範本。',
       savedJoin: '已更新「加入」日誌範本。',
       savedLeave: '已更新「離開」日誌範本。',
+      savedDisabled: '已停用該類日誌（範本為空）。輸入內容後才會再次發送。',
       modalCreate: '建立日誌範本',
       modalUpdate: '更新日誌範本',
       modalDelete: '刪除日誌範本',

@@ -37,11 +37,11 @@ export const GuildSettingsCoreSchema = z.object({
   /** Channel webhook used for log delivery (managed automatically). */
   modLogWebhookId: z.string().nullable().default(null),
   modLogWebhookToken: z.string().nullable().default(null),
-  modLogTemplateCreate: z.string().min(1).max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.create),
-  modLogTemplateUpdate: z.string().min(1).max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.update),
-  modLogTemplateDelete: z.string().min(1).max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.delete),
-  modLogTemplateJoin: z.string().min(1).max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.join),
-  modLogTemplateLeave: z.string().min(1).max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.leave),
+  modLogTemplateCreate: z.string().max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.create),
+  modLogTemplateUpdate: z.string().max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.update),
+  modLogTemplateDelete: z.string().max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.delete),
+  modLogTemplateJoin: z.string().max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.join),
+  modLogTemplateLeave: z.string().max(2000).default(MOD_LOG_DEFAULT_TEMPLATES.leave),
   /** Voice-chat greeting when a temp channel is created; empty string disables it. */
   tempGreetingMessage: z.string().max(2000).default(''),
   /** Post an interactive control panel in the temp channel voice chat. */

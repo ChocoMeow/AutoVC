@@ -122,7 +122,9 @@ export class ModLogService {
     const guild = this.app.client.guilds.cache.get(guildId);
     if (!guild) return;
 
-    const template = modLogTemplateValue(settings, event);
+    const template = modLogTemplateValue(settings, event).trim();
+    if (!template) return;
+
     const ctx = buildModLogTemplateContext(settings, event, input);
     const content = (await this.app.templateEngine.render(template, ctx)).trim();
     if (!content) return;

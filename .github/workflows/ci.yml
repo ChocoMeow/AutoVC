@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, beta]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   typecheck:
     name: Typecheck
@@ -26,21 +30,59 @@ jobs:
         run: bun run typecheck
 
   docker:
-    name: Docker build
+    name: Docker
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Image name (GHCR requires lowercase)
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Compose tags
+        id: dockertags
+        run: |
+          TAGS="${IMAGE_NAME}:sha-${{ github.sha }}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TAGS="${TAGS}"$'\n'"${IMAGE_NAME}:latest"$'\n'"${IMAGE_NAME}:main"
+          fi
+          if [ "${{ github.ref }}" = "refs/heads/beta" ]; then
+            TAGS="${TAGS}"$'\n'"${IMAGE_NAME}:beta"
+          fi
+          {
+            echo "tags<<TAGDELIM"
+            echo "$TAGS"
+            echo "TAGDELIM"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image
+      - name: Build (pull request)
+        if: github.event_name != 'push'
         uses: docker/build-push-action@v6
         with:
           context: .
           push: false
           tags: autovc:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (main / beta)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.dockertags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

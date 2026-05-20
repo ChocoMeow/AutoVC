@@ -474,12 +474,6 @@ async function handleModal(interaction: ModalSubmitInteraction, guildId: string)
   const modLogEvent = parseModalModLogEvent(interaction.customId);
   if (modLogEvent) {
     const template = interaction.fields.getTextInputValue('modLogTemplate').trim();
-    if (!template) {
-      await interaction.reply(
-        messagePanelReply(t, t('panel.modLog.invalidTitle'), t('panel.modLog.empty')),
-      );
-      return;
-    }
 
     const updated = await guildConfigRepo.updateSettings(
       guildId,
@@ -487,10 +481,12 @@ async function handleModal(interaction: ModalSubmitInteraction, guildId: string)
     );
     guildCache.set(guildId, updated);
     const tUpdated = guildTranslator(app, guildId, updated);
-    const savedBody = tUpdated(modLogSavedMessageKey(modLogEvent));
+    const savedBodyKey: MessageKey = template
+      ? modLogSavedMessageKey(modLogEvent)
+      : 'panel.modLog.savedDisabled';
 
     await interaction.reply(
-      messagePanelReply(tUpdated, tUpdated('panel.modLog.savedTitle'), savedBody, false),
+      messagePanelReply(tUpdated, tUpdated('panel.modLog.savedTitle'), tUpdated(savedBodyKey), false),
     );
     return;
   }
@@ -544,7 +540,7 @@ async function showModLogTemplateModal(
   const input = new TextInputBuilder()
     .setCustomId('modLogTemplate')
     .setStyle(TextInputStyle.Paragraph)
-    .setRequired(true)
+    .setRequired(false)
     .setValue(currentTemplate.slice(0, 2000))
     .setMaxLength(2000);
 
