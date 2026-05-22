@@ -17,7 +17,7 @@ export const CustomId = {
   editTemplateGuild: `${PREFIX}et:g`,
   editTemplateCreator: (channelId: string) => `${PREFIX}et:${channelId}`,
   editModLogTemplate: (event: ModLogEvent) => `${PREFIX}eml:${event}`,
-  modalModLogTemplate: (event: ModLogEvent) => `${PREFIX}mml:${event}`,
+  modalModLogTemplate: (event: ModLogEvent) => `${PREFIX}mml2:${MOD_LOG_MODAL_SUFFIX[event]}`,
   editGreeting: (scopeKey: string) => `${PREFIX}eg:${scopeKey}`,
   modalGreeting: (scopeKey: string) => `${PREFIX}mg:${scopeKey}`,
 } as const;
@@ -57,12 +57,31 @@ export function parseModalTemplateChannelId(id: string): string | null | undefin
   return parseSuffixId(id, `${PREFIX}mt:`, (channelId) => (channelId === 'g' ? null : channelId));
 }
 
+const MOD_LOG_MODAL_SUFFIX = {
+  create: 'crt',
+  update: 'upd',
+  delete: 'del',
+  join: 'jn',
+  leave: 'lv',
+} as const satisfies Record<ModLogEvent, string>;
+
+const MOD_LOG_MODAL_SUFFIX_TO_EVENT = Object.fromEntries(
+  Object.entries(MOD_LOG_MODAL_SUFFIX).map(([event, suffix]) => [suffix, event]),
+) as Record<string, ModLogEvent>;
+
 export function parseModalModLogEvent(id: string): ModLogEvent | undefined {
+  const fromMml2 = parseSuffixId(id, `${PREFIX}mml2:`, (suffix) => MOD_LOG_MODAL_SUFFIX_TO_EVENT[suffix]);
+  if (fromMml2) return fromMml2;
   return parseSuffixId(id, `${PREFIX}mml:`, (event) => (isModLogEvent(event) ? event : undefined));
 }
 
 export function parseEditModLogEvent(id: string): ModLogEvent | undefined {
   return parseSuffixId(id, `${PREFIX}eml:`, (event) => (isModLogEvent(event) ? event : undefined));
+}
+
+/** Unique per event — avoid `:create`/`:update` in custom_id (Discord may reuse cached defaults). */
+export function modLogTemplateInputId(event: ModLogEvent): string {
+  return `mltpl_${MOD_LOG_MODAL_SUFFIX[event]}`;
 }
 
 export function parseEditGreetingScopeKey(id: string): string | null {

@@ -1,4 +1,5 @@
 import {
+  ActionRowBuilder,
   LabelBuilder,
   ModalBuilder,
   TextInputBuilder,
@@ -19,6 +20,7 @@ import {
   CustomId,
   isAutoVcCustomId,
   parseEditGreetingScopeKey,
+  modLogTemplateInputId,
   parseEditModLogEvent,
   parseEditTemplateChannelId,
   parseModalGreetingScopeKey,
@@ -473,7 +475,7 @@ async function handleModal(interaction: ModalSubmitInteraction, guildId: string)
 
   const modLogEvent = parseModalModLogEvent(interaction.customId);
   if (modLogEvent) {
-    const template = interaction.fields.getTextInputValue('modLogTemplate').trim();
+    const template = interaction.fields.getTextInputValue(modLogTemplateInputId(modLogEvent)).trim();
 
     const updated = await guildConfigRepo.updateSettings(
       guildId,
@@ -537,11 +539,14 @@ async function showModLogTemplateModal(
   event: ModLogEvent,
   currentTemplate: string,
 ): Promise<void> {
+  const inputId = modLogTemplateInputId(event);
+  const value = currentTemplate.slice(0, 2000);
   const input = new TextInputBuilder()
-    .setCustomId('modLogTemplate')
+    .setCustomId(inputId)
+    .setLabel(t('panel.modLog.modalLabel'))
     .setStyle(TextInputStyle.Paragraph)
     .setRequired(false)
-    .setValue(currentTemplate.slice(0, 2000))
+    .setValue(value)
     .setMaxLength(2000);
 
   const modalTitle = t(modLogModalTitleKey(event));
@@ -549,9 +554,7 @@ async function showModLogTemplateModal(
   const modal = new ModalBuilder()
     .setCustomId(CustomId.modalModLogTemplate(event))
     .setTitle(modalTitle)
-    .addLabelComponents(
-      new LabelBuilder().setLabel(t('panel.modLog.modalLabel')).setTextInputComponent(input),
-    );
+    .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
 
   await interaction.showModal(modal);
 }
