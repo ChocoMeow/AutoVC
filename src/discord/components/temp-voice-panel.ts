@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   ContainerBuilder,
   StringSelectMenuBuilder,
+  UserSelectMenuBuilder,
   type GuildMember,
   type MessageCreateOptions,
   type MessageEditOptions,
@@ -27,7 +28,6 @@ import { guildTranslator } from '@/i18n/guild-translator.ts';
 import type { Translator } from '@/i18n/translator.ts';
 
 const ACCENT_TEMP = 0x5865f2;
-const MAX_MEMBER_SELECT_OPTIONS = 25;
 
 type SelectOption = {
   label: string;
@@ -53,6 +53,19 @@ function selectRow(
           ...(o.description ? { description: o.description.slice(0, 100) } : {}),
         })),
       ),
+  );
+}
+
+function userSelectRow(
+  customId: string,
+  placeholder: string,
+): ActionRowBuilder<UserSelectMenuBuilder> {
+  return new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
+    new UserSelectMenuBuilder()
+      .setCustomId(customId)
+      .setPlaceholder(placeholder)
+      .setMinValues(1)
+      .setMaxValues(1),
   );
 }
 
@@ -100,7 +113,9 @@ export async function editTempInterfaceMessage(
   const msg = await channel.messages.fetch(meta.interfaceMessageId).catch(() => null);
   if (!msg) return;
 
-  await msg.edit(buildTempInterfacePayload(t, channel, settings, meta.settings)).catch(() => undefined);
+  await msg.edit(buildTempInterfacePayload(t, channel, settings, meta.settings)).catch(
+    () => undefined,
+  );
 }
 
 export function buildTempInterfacePayload(
@@ -132,7 +147,7 @@ function buildTempInterfaceContainer(
     tempSettings?.rtcRegion,
   );
 
-  const container = new ContainerBuilder()
+  return new ContainerBuilder()
     .setAccentColor(ACCENT_TEMP)
     .addTextDisplayComponents((c) => c.setContent(t('tempInterface.sectionTitle')))
     .addTextDisplayComponents((c) => c.setContent(t('tempInterface.sectionIntro')))
@@ -168,44 +183,11 @@ function buildTempInterfaceContainer(
         t('tempInterface.selectRegion'),
         regionSelectOptions(t, regionValue),
       ),
+    )
+    .addTextDisplayComponents((c) => c.setContent(t('tempInterface.descMembers')))
+    .addActionRowComponents(
+      userSelectRow(TempVcId.selectMember(channel.id), t('tempInterface.selectMember')),
     );
-
-  const memberOptions = buildMemberActionOptions(t, channel);
-  if (memberOptions.length > 0) {
-    container
-      .addTextDisplayComponents((c) => c.setContent(t('tempInterface.descMembers')))
-      .addActionRowComponents(
-        selectRow(TempVcId.selectMember(channel.id), t('tempInterface.selectMember'), memberOptions),
-      );
-  }
-
-  return container;
-}
-
-function buildMemberActionOptions(
-  t: Translator,
-  channel: VoiceChannel,
-): SelectOption[] {
-  const members = [...channel.members.values()].filter((m) => !m.user.bot);
-  const actions = [
-    { action: 'kick' as const, label: t('tempInterface.kickOption') },
-    { action: 'block' as const, label: t('tempInterface.blockOption') },
-    { action: 'transfer' as const, label: t('tempInterface.transferOption') },
-  ];
-
-  const options: SelectOption[] = [];
-  for (const member of members) {
-    const name = member.displayName.slice(0, 80);
-    for (const { action, label } of actions) {
-      if (options.length >= MAX_MEMBER_SELECT_OPTIONS) return options;
-      options.push({
-        label: `${label} · ${name}`.slice(0, 100),
-        value: `${action}:${member.id}`,
-        description: name.slice(0, 100),
-      });
-    }
-  }
-  return options;
 }
 
 async function renderGreeting(

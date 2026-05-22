@@ -10,6 +10,7 @@ import {
   type ButtonInteraction,
   type ModalSubmitInteraction,
   type StringSelectMenuInteraction,
+  type UserSelectMenuInteraction,
   type VoiceChannel,
 } from 'discord.js';
 import { getAppContext } from '@/app-context.ts';
@@ -21,9 +22,10 @@ import { patchTempChannelSettings } from '@/domain/temp-channel-settings.ts';
 import { editTempInterfaceMessage } from '@/discord/components/temp-voice-panel.ts';
 import {
   isTempVoiceInteractionId,
+  isTempVcMemberPickId,
   parseTempVcButton,
   parseTempVcChannelId,
-  parseTempVcMemberSelectValue,
+  parseTempVcMemberActionButton,
   parseTempVcModalRename,
   parseTempVcSelectKind,
   TempVcId,
@@ -36,6 +38,7 @@ import type { Translator } from '@/i18n/translator.ts';
 type TempInteraction =
   | ButtonInteraction
   | StringSelectMenuInteraction
+  | UserSelectMenuInteraction
   | ModalSubmitInteraction;
 
 interface TempContext {
@@ -58,6 +61,8 @@ export async function handleTempVoiceInteraction(interaction: TempInteraction): 
 
   if (interaction.isButton()) {
     await handleButton(interaction, ctx);
+  } else if (interaction.isUserSelectMenu()) {
+    await handleUserSelect(interaction, ctx);
   } else if (interaction.isStringSelectMenu()) {
     await handleSelect(interaction, ctx);
   } else if (interaction.isModalSubmit()) {
@@ -112,6 +117,12 @@ async function resolveTempContext(
 }
 
 async function handleButton(interaction: ButtonInteraction, ctx: TempContext): Promise<void> {
+  const memberAction = parseTempVcMemberActionButton(interaction.customId);
+  if (memberAction) {
+    await executeMemberAction(interaction, ctx, memberAction.userId, memberAction.action);
+    return;
+  }
+
   const parsed = parseTempVcButton(interaction.customId);
   if (!parsed) return;
 
@@ -144,6 +155,99 @@ async function handleButton(interaction: ButtonInteraction, ctx: TempContext): P
   }
 }
 
+async function handleUserSelect(
+  interaction: UserSelectMenuInteraction,
+  ctx: TempContext,
+): Promise<void> {
+  if (!isTempVcMemberPickId(interaction.customId)) return;
+
+  const targetId = interaction.users.firstKey();
+  if (!targetId) return;
+
+  if (targetId === ctx.meta.ownerId) {
+    await interaction.reply({ content: ctx.t('tempInterface.cannotTargetOwner'), flags: EPHEMERAL_FLAGS });
+    return;
+  }
+
+  const target = ctx.channel.members.get(targetId)
+    ?? (await ctx.channel.guild.members.fetch(targetId).catch(() => null));
+
+  if (!target || target.user.bot) {
+    await interaction.reply({ content: ctx.t('tempInterface.memberNotInChannel'), flags: EPHEMERAL_FLAGS });
+    return;
+  }
+
+  if (target.voice.channelId !== ctx.channel.id) {
+    await interaction.reply({ content: ctx.t('tempInterface.memberNotInChannel'), flags: EPHEMERAL_FLAGS });
+    return;
+  }
+
+  const displayName = target.displayName.slice(0, 80);
+  await interaction.reply({
+    content: ctx.t('tempInterface.memberActionPrompt', { name: displayName }),
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId(TempVcId.memberAction(ctx.channel.id, targetId, 'kick'))
+          .setLabel(ctx.t('tempInterface.kickOption'))
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId(TempVcId.memberAction(ctx.channel.id, targetId, 'block'))
+          .setLabel(ctx.t('tempInterface.blockOption'))
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId(TempVcId.memberAction(ctx.channel.id, targetId, 'transfer'))
+          .setLabel(ctx.t('tempInterface.transferOption'))
+          .setStyle(ButtonStyle.Primary),
+      ),
+    ],
+    flags: EPHEMERAL_FLAGS,
+  });
+}
+
+async function executeMemberAction(
+  interaction: ButtonInteraction,
+  ctx: TempContext,
+  userId: string,
+  action: 'kick' | 'block' | 'transfer',
+): Promise<void> {
+  await interaction.deferUpdate();
+
+  const target = ctx.channel.members.get(userId)
+    ?? (await ctx.channel.guild.members.fetch(userId).catch(() => null));
+
+  if (!target || target.user.bot || target.voice.channelId !== ctx.channel.id) {
+    await interaction.editReply({ content: ctx.t('tempInterface.memberNotInChannel'), components: [] });
+    return;
+  }
+
+  if (userId === ctx.meta.ownerId) {
+    await interaction.editReply({ content: ctx.t('tempInterface.cannotTargetOwner'), components: [] });
+    return;
+  }
+
+  if (action === 'transfer') {
+    const ok = await ctx.app.voiceService.transferTempOwnershipTo(ctx.channel, userId);
+    await interaction.editReply({
+      content: ok ? ctx.t('tempInterface.transferred') : ctx.t('tempInterface.transferFailed'),
+      components: [],
+    });
+    return;
+  }
+
+  if (action === 'kick') {
+    await target.voice.disconnect('AutoVC: kicked by owner');
+    await interaction.editReply({ content: ctx.t('tempInterface.kicked'), components: [] });
+    return;
+  }
+
+  await ctx.channel.permissionOverwrites.edit(userId, { Connect: false, Speak: false });
+  if (target.voice.channelId === ctx.channel.id) {
+    await target.voice.disconnect('AutoVC: blocked by owner');
+  }
+  await interaction.editReply({ content: ctx.t('tempInterface.blocked'), components: [] });
+}
+
 async function handleSelect(
   interaction: StringSelectMenuInteraction,
   ctx: TempContext,
@@ -153,8 +257,6 @@ async function handleSelect(
   if (!parsed || !value) return;
 
   await interaction.deferReply({ flags: EPHEMERAL_DEFER_FLAGS });
-
-  let refreshPanel = true;
 
   switch (parsed.kind) {
     case 'limit': {
@@ -171,43 +273,6 @@ async function handleSelect(
       await interaction.editReply({ content: ctx.t('tempInterface.regionUpdated') });
       break;
     }
-    case 'member': {
-      const action = parseTempVcMemberSelectValue(value);
-      if (!action) return;
-
-      if (action.action === 'transfer') {
-        refreshPanel = false;
-        if (action.userId === ctx.meta.ownerId) {
-          await interaction.editReply({ content: ctx.t('tempInterface.alreadyOwner') });
-          return;
-        }
-        const ok = await ctx.app.voiceService.transferTempOwnershipTo(ctx.channel, action.userId);
-        await interaction.editReply({
-          content: ok ? ctx.t('tempInterface.transferred') : ctx.t('tempInterface.transferFailed'),
-        });
-        if (ok) await editTempInterfaceMessage(ctx.app, ctx.channel, ctx.settings, ctx.t);
-        return;
-      }
-
-      const member = await ctx.channel.guild.members.fetch(action.userId).catch(() => null);
-      if (action.action === 'kick') {
-        if (member?.voice.channelId === ctx.channel.id) {
-          await member.voice.disconnect('AutoVC: kicked by owner');
-        }
-        await interaction.editReply({ content: ctx.t('tempInterface.kicked') });
-      } else {
-        await ctx.channel.permissionOverwrites.edit(action.userId, { Connect: false, Speak: false });
-        if (member?.voice.channelId === ctx.channel.id) {
-          await member.voice.disconnect('AutoVC: blocked by owner');
-        }
-        await interaction.editReply({ content: ctx.t('tempInterface.blocked') });
-      }
-      break;
-    }
-  }
-
-  if (refreshPanel) {
-    await editTempInterfaceMessage(ctx.app, ctx.channel, ctx.settings, ctx.t);
   }
 }
 
@@ -244,7 +309,6 @@ async function handleModal(interaction: ModalSubmitInteraction, ctx: TempContext
   await ctx.channel.setName(name, ctx.app.config.channelNameRefresh.renameReason);
   await patchTempChannelSettings(ctx.app, ctx.channel.id, { customName: name });
   await interaction.editReply({ content: ctx.t('tempInterface.renamed') });
-  await editTempInterfaceMessage(ctx.app, ctx.channel, ctx.settings, ctx.t);
 }
 
 function renameModal(

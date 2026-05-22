@@ -47,6 +47,7 @@ export default defineEvent({
     if (
       interaction.isButton() ||
       interaction.isStringSelectMenu() ||
+      interaction.isUserSelectMenu() ||
       interaction.isModalSubmit()
     ) {
       if (isTempVoiceInteractionId(interaction.customId)) {
@@ -73,6 +74,7 @@ export default defineEvent({
       }
 
       if (!isAutoVcCustomId(interaction.customId)) return;
+      if (interaction.isUserSelectMenu()) return;
 
       try {
         await handleCreatorPanelInteraction(interaction);

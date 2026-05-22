@@ -4,6 +4,8 @@ AutoVC is a Discord bot that creates **temporary voice channels** when members j
 
 Built with [Bun](https://bun.sh), [discord.js](https://discord.js.org/) v14, and [Supabase](https://supabase.com).
 
+**Try the demo bot:** [Add AutoVC to your server](https://discord.com/oauth2/authorize?client_id=1503609234984800376&permissions=4522424402046192&integration_type=0&scope=bot+applications.commands) — no self-hosting required. You need **Manage Server** to run `/creator` and configure hubs.
+
 ---
 
 ## Table of contents
@@ -263,10 +265,10 @@ Open **per-creator** settings by choosing a hub in the creator selector on the s
 
 If **Control panel** is enabled under **Voice chat** settings, each new temp channel posts an interactive panel in **voice chat**. The **owner** must be **connected to that voice channel** to use it:
 
-- Rename (supports templates)
-- Set user limit / region
-- Kick, block, or transfer ownership
-- Delete the temp channel
+- **Channel** — Rename (supports templates), delete the temp channel, or refresh the panel
+- **User limit / voice region** — Dropdowns on the panel
+- **Members** — Pick someone from the server with the user menu; they must be in your temp voice channel (not you). The bot then asks privately whether to **kick**, **block** (deny rejoin), or **transfer ownership**
+- **Refresh panel** — Updates limit/region display on the panel without editing it on every join/leave
 
 ---
 
