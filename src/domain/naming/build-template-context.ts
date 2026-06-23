@@ -8,6 +8,27 @@ import type { ModLogChannelKind } from '@/domain/mod-log/channel-kind.ts';
 import type { ModLogEvent } from '@/domain/mod-log/types.ts';
 import type { TemplateContext } from '@/domain/naming/template-context.ts';
 
+function resolveOrdinal(
+  allGuildTemps: TempChannelMeta[],
+  channelId: string,
+  forNewChannel: boolean,
+  predicate: (entry: TempChannelMeta) => boolean,
+): number {
+  const filtered = allGuildTemps
+    .filter(predicate)
+    .sort((a, b) => {
+      const left = BigInt(a.channelId);
+      const right = BigInt(b.channelId);
+      if (left === right) return 0;
+      return left < right ? -1 : 1;
+    });
+
+  if (forNewChannel) return filtered.length + 1;
+
+  const index = filtered.findIndex((entry) => entry.channelId === channelId);
+  return index >= 0 ? index + 1 : filtered.length;
+}
+
 async function resolveOwnerMember(
   guild: Guild,
   channel: VoiceBasedChannel,
@@ -63,8 +84,7 @@ export async function buildChannelTemplateContext(
   );
   if (!member) return null;
 
-  const creatorCount = tempRegistry.countByCreator(meta.guildId, meta.creatorChannelId);
-  const ownerCount = tempRegistry.countByOwner(meta.guildId, meta.ownerId);
+  const guildTemps = tempRegistry.listByGuild(meta.guildId);
 
   return {
     profile: 'channel',
@@ -74,8 +94,18 @@ export async function buildChannelTemplateContext(
     channel,
     creatorChannel,
     memberCountInNewChannel: opts.forNewChannel ? 1 : channel.members.size,
-    tempChannelOrdinal: opts.forNewChannel ? creatorCount + 1 : creatorCount,
-    ownerTempOrdinal: opts.forNewChannel ? ownerCount + 1 : ownerCount,
+    tempChannelOrdinal: resolveOrdinal(
+      guildTemps,
+      meta.channelId,
+      opts.forNewChannel,
+      (entry) => entry.creatorChannelId === meta.creatorChannelId,
+    ),
+    ownerTempOrdinal: resolveOrdinal(
+      guildTemps,
+      meta.channelId,
+      opts.forNewChannel,
+      (entry) => entry.ownerId === meta.ownerId,
+    ),
   };
 }
 
